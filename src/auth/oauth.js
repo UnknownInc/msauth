@@ -141,7 +141,7 @@ const getAuthRouter=async (config)=>{
     try {
       const code_verifier = await cache.getAsync(state);
       cache.del(state);
-      const redirect_uri=`${req.protocol+"://"+req.headers.host+'/callback'}`;
+      const redirect_uri=(req.headers['x-forwarded-proto']||req.protocol)+"://"+req.headers.host+'/callback';
       const tokenResponse = await axios.post(`${OAuthConfig.token_endpoint}`,qs.stringify({
           grant_type: 'authorization_code',
           client_id,
