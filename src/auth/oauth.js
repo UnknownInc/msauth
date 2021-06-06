@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import qs from 'qs';
 import { Router } from 'express';
-import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 const SSID_COOKIE_NAME = 'ssid';
 
@@ -169,7 +169,7 @@ const getAuthRouter=async (config)=>{
         return res.redirect("/");
       }
 
-      const sessionId = "ac."+base64URLEncode(sha256(uuid.v4()));
+      const sessionId = "ac."+base64URLEncode(sha256(uuidv4()));
 
       res.cookie(SSID_COOKIE_NAME, sessionId, {
         signed: true,
