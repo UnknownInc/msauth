@@ -1,0 +1,40 @@
+steps:
+# step 0 store build info
+- id: "Store Values"
+  name: ubuntu
+  entrypoint: bash
+  args:
+    - -c
+    - |
+      # save the commit info & build date
+      NOW=$(date +"%Y-%m-%d %T")
+      echo "{\"branch\":\"$BRANCH_NAME\", \"commit\":\"$COMMIT_SHA\", \"repo\":\"$REPO_NAME\", \"buildtime\":\"$$NOW\", \"buildid\":\"$BUILD_ID\"}" > BUILDINFO
+      cat BUILDINFO VERSION
+      VERSION=$(cat VERSION)
+      # Replace version in k8s/kustomization.yaml
+      sed -i "s#VERSION#$(cat VERSION)#g" k8s/kustomization.yaml
+      # Replace image in k8s/kustomization.yaml
+      sed -i "s#IMAGE_NAME#gcr.io/$PROJECT_ID/$_APP_NAME#g" k8s/kustomization.yaml
+      # Replace image tag in k8s/kustomization.yaml
+      sed -i "s#IMAGE_TAG#$SHORT_SHA#g" k8s/kustomization.yaml
+      # Replace overlay in k8s/kustomization.yaml
+      sed -i "s#BRANCH#$BRANCH_NAME#g" k8s/kustomization.yaml
+      cat k8s/kustomization.yaml
+- id: "Build Container Image"
+  name: 'gcr.io/kaniko-project/executor:latest'
+  args: [
+    '--destination=gcr.io/$PROJECT_ID/$_APP_NAME:$SHORT_SHA',
+    '--destination=gcr.io/$PROJECT_ID/$_APP_NAME:latest',
+    '--build-arg', 'COMMITSHA=$COMMIT_SHA',
+    '--build-arg', 'SHORTSHA=$SHORT_SHA',
+    '--cache=true',
+    '--cache-ttl=336h'
+  ]
+- id: deploy
+  name: 'gcr.io/cloud-builders/kubectl'
+  args: ['apply', '-k', './k8s']
+  env:
+    - 'CLOUDSDK_COMPUTE_ZONE=$_CLOUDSDK_COMPUTE_ZONE'
+    - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLOUDSDK_CONTAINER_CLUSTER'
+substitutions:
+  _APP_NAME: 'psipdr'
