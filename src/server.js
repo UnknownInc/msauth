@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 ;(async ()=>{
 
   const server = app.listen(app.config.PORT, () => {
-      app.log.info(`PSI PDR server app listening at port:${app.config.PORT}`); 
+      app.log.info(`PSI MSAUTH server app listening at port:${app.config.PORT}`); 
       try {
         const builddata=readFileSync(join(__dirname,"../BUILDINFO")).toString();
         app.log.info(builddata)

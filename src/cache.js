@@ -10,7 +10,7 @@ function initializeCache(config) {
       host: config.redisHost, 
       port: config.redisPort, 
       password: config.redisPassword,
-      db: 0,
+      db: config.redisDB,
       ttl: 600
     });
     // listen for redis connection error event

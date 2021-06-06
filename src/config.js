@@ -11,6 +11,7 @@ const config = {
     redisHost: process.env.REDIS_HOST,
     redisPort: process.env.REDIS_PORT,
     redisPassword: process.env.REDIS_PASSWORD,
+    redisDB: process.env.REDIS_DB
 };
 
 export default config;

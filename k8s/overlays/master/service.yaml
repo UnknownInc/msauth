@@ -4,5 +4,5 @@ metadata:
   name: psiappsvc
 spec:
   selector:
-    app: main-login
-    environment: main
+    app: prod-msauth
+    environment: prod

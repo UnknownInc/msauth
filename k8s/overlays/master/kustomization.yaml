@@ -6,6 +6,7 @@ patchesStrategicMerge:
   - "service.yaml"
   - "deployment.yaml"
   - "configMap.yaml"
-namePrefix: main-pdr-
+namePrefix: prod-msauth-
+namespace: prod
 commonLabels:
-  environment: main
+  environment: prod

@@ -45,7 +45,7 @@ export const verifySessionTokens = async (req, res, next)=>{
 
     log.info('refreshing access_token');
     const client_id = req.app.config.client_id;
-    const client_secret = req.app.config.secret;
+    const client_secret = req.app.config.client_secret;
     const refresh_token = sessionData.tokenData.refresh_token;
 
     const tokenResponse = await axios.post(`${sessionData.authorization_endpoint}`,qs.stringify({
@@ -102,73 +102,6 @@ const getAuthRouter=async (config)=>{
     console.error(`unable to get openid configuration from ${config.openidconfigurl} \n ${ex}`);
     return router;
   }
-
-  // const OAuthConfig = {
-  //   token_endpoint: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/oauth2/v2.0/token",
-  //   token_endpoint_auth_methods_supported: [
-  //     "client_secret_post",
-  //     "private_key_jwt",
-  //     "client_secret_basic"
-  //   ],
-  //   jwks_uri: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/discovery/v2.0/keys",
-  //   response_modes_supported: [
-  //     "query",
-  //     "fragment",
-  //     "form_post"
-  //   ],
-  //   subject_types_supported: [
-  //     "pairwise"
-  //   ],
-  //   id_token_signing_alg_values_supported: [
-  //     "RS256"
-  //   ],
-  //   response_types_supported: [
-  //     "code",
-  //     "id_token",
-  //     "code id_token",
-  //     "id_token token"
-  //   ],
-  //   scopes_supported: [
-  //   "openid",
-  //   "profile",
-  //   "email",
-  //   "offline_access"
-  //   ],
-  //   issuer: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/v2.0",
-  //   request_uri_parameter_supported: false,
-  //   userinfo_endpoint: "https://graph.microsoft.com/oidc/userinfo",
-  //   authorization_endpoint: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/oauth2/v2.0/authorize",
-  //   device_authorization_endpoint: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/oauth2/v2.0/devicecode",
-  //   http_logout_supported: true,
-  //   frontchannel_logout_supported: true,
-  //   end_session_endpoint: "https://login.microsoftonline.com/d52c9ea1-7c21-47b1-82a3-33a74b1f74b8/oauth2/v2.0/logout",
-  //   claims_supported: [
-  //     "sub",
-  //     "iss",
-  //     "cloud_instance_name",
-  //     "cloud_instance_host_name",
-  //     "cloud_graph_host_name",
-  //     "msgraph_host",
-  //     "aud",
-  //     "exp",
-  //     "iat",
-  //     "auth_time",
-  //     "acr",
-  //     "nonce",
-  //     "preferred_username",
-  //     "name",
-  //     "tid",
-  //     "ver",
-  //     "at_hash",
-  //     "c_hash",
-  //     "email"
-  //   ],
-  //   tenant_region_scope: "NA",
-  //   cloud_instance_name: "microsoftonline.com",
-  //   cloud_graph_host_name: "graph.windows.net",
-  //   msgraph_host: "graph.microsoft.com",
-  //   rbac_url: "https://pas.windows.net"
-  // };
 
   router.get('/login', function(req, res){
     const {log, cache} = req.app;
@@ -236,7 +169,7 @@ const getAuthRouter=async (config)=>{
         return res.redirect("/");
       }
 
-      const sessionId = base64URLEncode(sha256(uuid.v4()));
+      const sessionId = "ac."+base64URLEncode(sha256(uuid.v4()));
 
       res.cookie(SSID_COOKIE_NAME, sessionId, {
         signed: true,
@@ -264,8 +197,10 @@ const getAuthRouter=async (config)=>{
   router.get('/logout', (req, res)=>{
     res.clearCookie(SSID_COOKIE_NAME);
     if (req.sessionData) {
-      cache.del(req.sessionData.id);
+      req.app.cache.del(req.sessionData.id);
     }
+    const returnUrl = req.query.returnUrl||'/';
+    return res.redirect(returnUrl);
   })
 
   return router;
