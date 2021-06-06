@@ -122,7 +122,7 @@ const getAuthRouter=async (config)=>{
         `client_id=${client_id}&`,
         `scope=${scopes}&`,
         `response_type=code&`,
-        `redirect_uri=${req.protocol+"://"+req.headers['host']+'/callback'}&`,
+        `redirect_uri=${(req.headers['x-forwarded-proto']||req.protocol)+"://"+req.headers['host']+'/callback'}&`,
         `code_challenge=${code_challenge}&`,
         `code_challenge_method=S256&`,
         `state=${state}`
