@@ -38,7 +38,14 @@ spec:
         - name: REDIS_PORT
           value: '6379'
         - name: REDIS_HOST
-          value: redis
+          value: 'redis'
+        - name: REDIS_DB
+          value: '0'
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: redis-password
         - name: loglevel
           valueFrom:
             configMapKeyRef:
