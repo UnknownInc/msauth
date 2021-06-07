@@ -59,13 +59,6 @@ app.get('/_buildinfo', function(_req, res){
   }
 });
 
-app.get('/_env', function(_req, res){
-  if (req.sessionData.id) {
-    return res.json(process.env);
-  }
-  return res.status(403);
-})
-
 import apiRouter from './api/index.js';
 app.use('/api', apiRouter);
 

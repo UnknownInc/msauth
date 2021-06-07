@@ -12,6 +12,7 @@ const __dirname = dirname(__filename);
 
   const server = app.listen(app.config.PORT, () => {
       app.log.info(`PSI MSAUTH server app listening at port:${app.config.PORT}`); 
+      app.log.debug(JSON.stringify(process.env, null,2));
       try {
         const builddata=readFileSync(join(__dirname,"../BUILDINFO")).toString();
         app.log.info(builddata)
