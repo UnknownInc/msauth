@@ -3,6 +3,7 @@ import axios from 'axios';
 import qs from 'qs';
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import {URL} from 'url';
 
 const SSID_COOKIE_NAME = 'ssid';
 
@@ -20,6 +21,21 @@ const getDomainRoot = (host)=>{
   if (parts.length<3) return;
   return `${parts[1]}.${parts[2]}`;
 }
+
+const getReturnUrl = (rurl)=>{
+  const ru = new URL(rurl);
+  // const cu = new URL((req.headers['x-forwarded-proto']||req.protocol) +
+  //   "://" + req.headers.host + req.originalUrl);
+  if (!ru.hostname) {
+    return rurl;
+  }
+  const allowedReturnhostnames = process.env.RETURN_HOSTS.split(',');
+  if (allowedReturnhostnames.indexOf(ru.hostname.toLocaleLowerCase)!==-1) {
+    return rurl;
+  }
+  return '/';
+}
+
 export const verifySessionTokens = async (req, res, next)=>{
   const {log, cache, config} = req.app;
   const ssid = req.signedCookies[SSID_COOKIE_NAME];
@@ -43,17 +59,15 @@ export const verifySessionTokens = async (req, res, next)=>{
       return next();
     }
 
-    log.info('refreshing access_token');
-    const client_id = req.app.config.client_id;
-    const client_secret = req.app.config.client_secret;
-    const refresh_token = sessionData.tokenData.refresh_token;
-
-    const tokenResponse = await axios.post(`${sessionData.authorization_endpoint}`,qs.stringify({
-        grant_type: 'refresh_token',
-        client_id,
-        client_secret,
-        refresh_token
-    }));
+    const data = {
+      grant_type: 'refresh_token',
+      client_id: req.app.config.client_id,
+      client_secret: req.app.config.client_secret,
+      refresh_token: sessionData.tokenData.refresh_token
+    }
+    log.debug(`refreshing access_token: ${JSON.stringify(data)}`);
+    const tokenResponse = await axios.post(`${sessionData.token_endpoint}`,
+      qs.stringify(data));
 
     if (tokenResponse.status!==200) {
       log.error(`unable to refresh token. ${tokenResponse.data}`);
@@ -63,6 +77,12 @@ export const verifySessionTokens = async (req, res, next)=>{
     }
 
     const tokenData = tokenResponse.data;
+    if (!tokenData.access_token) {
+      log.error(`invalid response on refreshing the token: ${tokenData.data}`);
+      delete req.sessionData;
+      return next();
+    }
+
     sessionData.tokenData = tokenData;
     sessionData.expiresAt = Date.now() + tokenData.expires_in*1000;
     res.cookie(SSID_COOKIE_NAME, ssid, {
@@ -107,7 +127,8 @@ const getAuthRouter=async (config)=>{
     const {log, cache} = req.app;
     const state=base64URLEncode(crypto.randomBytes(16));
     const code_verifier = base64URLEncode(crypto.randomBytes(32));
-    cache.set(state, code_verifier);
+
+    cache.set(state, {code_verifier, returnUrl: getReturnUrl(req)});
 
     const scopes =  [...(req.query.scopes||'').split(','),...OAuthConfig.scopes_supported].join('%20');
     log.info(`login for scopes: ${scopes}`);
@@ -126,7 +147,7 @@ const getAuthRouter=async (config)=>{
         `code_challenge=${code_challenge}&`,
         `code_challenge_method=S256&`,
         `state=${state}`
-      ].join('')
+      ].join('');
       res.redirect(url);
   });
 
@@ -139,7 +160,7 @@ const getAuthRouter=async (config)=>{
       return res.json({error, error_description});
     }
     try {
-      const code_verifier = await cache.getAsync(state);
+      const {code_verifier, returnUrl} = await cache.getAsync(state);
       cache.del(state);
       const redirect_uri=(req.headers['x-forwarded-proto']||req.protocol)+"://"+req.headers.host+'/callback';
       const tokenResponse = await axios.post(`${OAuthConfig.token_endpoint}`,qs.stringify({
@@ -184,9 +205,8 @@ const getAuthRouter=async (config)=>{
         tokenData,
         userInfo: userInfoResponse.data,
         ua: req.headers['user-agent'],
-        authorization_endpoint: OAuthConfig.authorization_endpoint,
+        token_endpoint: OAuthConfig.token_endpoint,
       }, {ttl: config.sessionTimeout});
-      const returnUrl="/";
       return res.redirect(returnUrl);
     } catch(ex) {
       console.error(ex);
