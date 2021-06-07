@@ -45,7 +45,7 @@ export const verifySessionTokens = async (req, res, next)=>{
   const ssid = req.signedCookies[SSID_COOKIE_NAME];
   if (!ssid) { 
     log.info('No Session');
-    delete req.sessionData; 
+    req.sessionData=null; 
     return next(); 
   }
 
@@ -53,7 +53,7 @@ export const verifySessionTokens = async (req, res, next)=>{
     const sessionData = await cache.getAsync(ssid);
     if (!sessionData) {
       console.log(`Invalid session id: ${ssid}`);
-      delete req.sessionData;
+      req.sessionData=null;
       res.clearCookie(SSID_COOKIE_NAME);
       return next();
     }
@@ -83,7 +83,7 @@ export const verifySessionTokens = async (req, res, next)=>{
     const tokenData = tokenResponse.data;
     if (!tokenData.access_token) {
       log.error(`invalid response on refreshing the token: ${tokenData.data}`);
-      delete req.sessionData;
+      req.sessionData=null;
       return next();
     }
 
@@ -101,7 +101,7 @@ export const verifySessionTokens = async (req, res, next)=>{
     return next();
   } catch(ex) {
     log.error(ex);
-    delete req.sessionData;
+    req.sessionData=null;
     return next();
   }
 };
