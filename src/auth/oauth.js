@@ -23,15 +23,19 @@ const getDomainRoot = (host)=>{
 }
 
 const getReturnUrl = (rurl)=>{
-  const ru = new URL(rurl);
-  // const cu = new URL((req.headers['x-forwarded-proto']||req.protocol) +
-  //   "://" + req.headers.host + req.originalUrl);
-  if (!ru.hostname) {
-    return rurl;
-  }
-  const allowedReturnhostnames = process.env.RETURN_HOSTS.split(',');
-  if (allowedReturnhostnames.indexOf(ru.hostname.toLocaleLowerCase)!==-1) {
-    return rurl;
+  try {
+    const ru = new URL(rurl);
+    // const cu = new URL((req.headers['x-forwarded-proto']||req.protocol) +
+    //   "://" + req.headers.host + req.originalUrl);
+    if (!ru.hostname) {
+      return rurl;
+    }
+    const allowedReturnhostnames = process.env.RETURN_HOSTS.split(',');
+    if (allowedReturnhostnames.indexOf(ru.hostname.toLocaleLowerCase)!==-1) {
+      return rurl;
+    }
+  } catch(ex) {
+    console.error(`error parsing retrurnurl: ${ex}`)
   }
   return '/';
 }
@@ -128,7 +132,7 @@ const getAuthRouter=async (config)=>{
     const state=base64URLEncode(crypto.randomBytes(16));
     const code_verifier = base64URLEncode(crypto.randomBytes(32));
 
-    cache.set(state, {code_verifier, returnUrl: getReturnUrl(req)});
+    cache.set(state, {code_verifier, returnUrl: getReturnUrl(req.query.returnUrl)});
 
     const scopes =  [...(req.query.scopes||'').split(','),...OAuthConfig.scopes_supported].join('%20');
     log.info(`login for scopes: ${scopes}`);
