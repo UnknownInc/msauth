@@ -35,7 +35,7 @@ const getReturnUrl = (rurl)=>{
       return rurl;
     }
   } catch(ex) {
-    console.error(`error parsing retrurnurl: ${ex}`)
+    console.error(`error parsing returnUrl: ${ex}`)
   }
   return '/';
 }
@@ -132,7 +132,7 @@ const getAuthRouter=async (config)=>{
     const state=base64URLEncode(crypto.randomBytes(16));
     const code_verifier = base64URLEncode(crypto.randomBytes(32));
 
-    cache.set(state, {code_verifier, returnUrl: getReturnUrl(req.query.returnUrl)});
+    cache.set(state, {code_verifier, returnUrl: getReturnUrl(req.query.returnUrl||'/')});
 
     const scopes =  [...(req.query.scopes||'').split(','),...OAuthConfig.scopes_supported].join('%20');
     log.info(`login for scopes: ${scopes}`);
